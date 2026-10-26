@@ -53,4 +53,33 @@ $failures = 0;
 $sync = new OnlineTarget(['endpoint' => 'https://example.invalid/ingest', 'queue' => new yii\queue\sync\Queue(), 'onEnqueueFailure' => static function () use (&$failures) { ++$failures; }]);
 $sync->collect([['hello', Logger::LEVEL_INFO, 'test', 1.0, []]], true);
 check($failures === 1, 'Synchronous queue not rejected');
+// Exercise real HTTP without external services.
+if (function_exists('pcntl_fork')) {
+    foreach ([204, 503, 302] as $status) {
+        $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $error);
+        $address = stream_socket_get_name($server, false);
+        $pid = pcntl_fork();
+        if ($pid === 0) {
+            $client = stream_socket_accept($server, 5);
+            if (!$client) { exit(2); }
+            $request = '';
+            while (($line = fgets($client)) !== false) { $request .= $line; if ($line === "\r\n") { break; } }
+            preg_match('/Content-Length: (\d+)/i', $request, $match);
+            $body = '';
+            $length = (int) ($match[1] ?? 0);
+            while (strlen($body) < $length) { $part = fread($client, $length - strlen($body)); if ($part === false || $part === '') { break; } $body .= $part; }
+            fwrite($client, "HTTP/1.1 $status Test\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            fclose($client);
+            exit(str_contains($request, 'Authorization: Bearer test-secret') && json_decode($body, true)['version'] === 1 ? 0 : 3);
+        }
+        fclose($server);
+        $transport = new carono\onlineTarget\HttpTransport(['token' => 'test-secret']);
+        $failed = false;
+        try { $transport->send('http://' . $address, ['version' => 1]); }
+        catch (RuntimeException $e) { $failed = true; check(!str_contains($e->getMessage(), 'test-secret'), 'Secret leaked'); }
+        pcntl_waitpid($pid, $childStatus);
+        check(pcntl_wexitstatus($childStatus) === 0, 'HTTP request malformed');
+        check($failed === ($status !== 204), 'HTTP response handling failed');
+    }
+}
 echo "All tests passed.\n";
