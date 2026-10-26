@@ -8,9 +8,9 @@
     "ext-curl": "*",
     "ext-json": "*",
     "yiisoft/yii2": "^2.0.49",
-    "yiisoft/yii2-queue": "^2.3",
-    "yidas/yii2-composer-bower-skip": "^2.0"
+    "yiisoft/yii2-queue": "^2.3"
   },
+  "require-dev": {"yidas/yii2-composer-bower-skip": "^2.0"},
   "autoload": {"psr-4": {"carono\\onlineTarget\\": "src/"}},
   "config": {"allow-plugins": {"yiisoft/yii2-composer": true}},
   "scripts": {"test": "php tests/run.php"}
