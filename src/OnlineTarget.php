@@ -74,7 +74,7 @@ class OnlineTarget extends Target
                         $event = ($this->processor)($event);
                     }
                     // Normalize now: closures, exceptions and application objects never enter the queue.
-                    $events[] = json_decode(json_encode($event, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
+                    $events[] = json_decode(json_encode($event, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), true, 512, JSON_THROW_ON_ERROR);
                 }
                 $job = new DeliveryJob();
                 $job->endpoint = $this->endpoint;

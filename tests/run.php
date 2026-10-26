@@ -12,6 +12,7 @@ function check(bool $condition, string $message): void {
     if (!$condition) { throw new RuntimeException($message); }
 }
 class MemoryQueue extends yii\queue\Queue {
+    public function status($id) { return self::STATUS_WAITING; }
     public array $jobs = [];
     protected function pushMessage($message, $ttr, $delay, $priority) { $this->jobs[] = $message; return count($this->jobs); }
 }
